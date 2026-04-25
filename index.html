@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Temperature Converter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f5f6f8;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+    .card {
+      background: #fff;
+      border: 1.5px solid #e2e5ea;
+      border-radius: 18px;
+      padding: 32px 28px 28px;
+      width: 100%;
+      max-width: 560px;
+    }
+    h1 { font-size: 26px; font-weight: 700; color: #111; margin-bottom: 6px; }
+    .subtitle { font-size: 14px; color: #6b7280; margin-bottom: 28px; }
+    .input-row { display: flex; gap: 10px; align-items: stretch; flex-wrap: wrap; }
+    .temp-input {
+      width: 90px; padding: 11px 14px;
+      border: 1.5px solid #d1d5db; border-radius: 10px;
+      font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; color: #111;
+      outline: none; transition: border-color .2s, box-shadow .2s; flex-shrink: 0;
+    }
+    .temp-input:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(17,17,17,.07); }
+    .temp-input::placeholder { color: #9ca3af; }
+    .select-wrap { position: relative; flex: 1; min-width: 130px; }
+    .select-wrap select {
+      width: 100%; height: 100%; padding: 11px 36px 11px 14px;
+      appearance: none; -webkit-appearance: none; background: #fff;
+      border: 1.5px solid #d1d5db; border-radius: 10px;
+      font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; color: #111;
+      cursor: pointer; outline: none; transition: border-color .2s, box-shadow .2s;
+    }
+    .select-wrap select:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(17,17,17,.07); }
+    .select-wrap::after {
+      content: ''; position: absolute; right: 13px; top: 50%; transform: translateY(-50%);
+      width: 0; height: 0; border-left: 5px solid transparent;
+      border-right: 5px solid transparent; border-top: 6px solid #6b7280; pointer-events: none;
+    }
+    .btn-convert {
+      padding: 11px 22px; background: #111; color: #fff; border: none;
+      border-radius: 10px; font-family: 'Inter', sans-serif; font-size: 15px;
+      font-weight: 600; cursor: pointer; white-space: nowrap;
+      transition: opacity .15s, transform .1s; flex-shrink: 0;
+    }
+    .btn-convert:hover:not(:disabled) { opacity: .88; }
+    .btn-convert:active:not(:disabled) { transform: scale(.97); }
+    .btn-convert:disabled { background: #d1d5db; color: #9ca3af; cursor: not-allowed; }
+    .result {
+      margin-top: 20px; font-size: 16px; font-weight: 600; color: #16a34a;
+      min-height: 24px; transition: opacity .25s;
+    }
+    .result.error { color: #dc2626; }
+    .result.hidden { opacity: 0; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>Temperature Converter</h1>
+  <p class="subtitle">Enter the temperature, select units and submit</p>
+  <div class="input-row">
+    <input type="number" class="temp-input" id="temp-value" placeholder="0.00" step="any" aria-label="Temperature value" />
+    <div class="select-wrap">
+      <select id="from-unit" aria-label="Convert from unit">
+        <option value="" disabled selected>From Unit</option>
+        <option value="celsius">Celsius</option>
+        <option value="fahrenheit">Fahrenheit</option>
+        <option value="kelvin">Kelvin</option>
+      </select>
+    </div>
+    <div class="select-wrap">
+      <select id="to-unit" aria-label="Convert to unit">
+        <option value="" disabled selected>To Unit</option>
+        <option value="celsius">Celsius</option>
+        <option value="fahrenheit">Fahrenheit</option>
+        <option value="kelvin">Kelvin</option>
+      </select>
+    </div>
+    <button class="btn-convert" id="btn-convert" disabled aria-label="Convert temperature">Convert</button>
+  </div>
+  <div class="result hidden" id="result" role="status" aria-live="polite"></div>
+</div>
+<script>
+  const tempInput  = document.getElementById('temp-value');
+  const fromUnit   = document.getElementById('from-unit');
+  const toUnit     = document.getElementById('to-unit');
+  const btnConvert = document.getElementById('btn-convert');
+  const result     = document.getElementById('result');
+  const LABELS     = { celsius: 'Celsius', fahrenheit: 'Fahrenheit', kelvin: 'Kelvin' };
+
+  function checkFields() {
+    btnConvert.disabled = !(tempInput.value.trim() !== '' && fromUnit.value && toUnit.value);
+  }
+  [tempInput, fromUnit, toUnit].forEach(el => el.addEventListener('input', checkFields));
+
+  function toCelsius(v, from) {
+    if (from === 'celsius')    return v;
+    if (from === 'fahrenheit') return (v - 32) * 5 / 9;
+    if (from === 'kelvin')     return v - 273.15;
+  }
+  function fromCelsius(c, to) {
+    if (to === 'celsius')    return c;
+    if (to === 'fahrenheit') return c * 9 / 5 + 32;
+    if (to === 'kelvin')     return c + 273.15;
+  }
+
+  btnConvert.addEventListener('click', () => {
+    const value = parseFloat(tempInput.value);
+    const from  = fromUnit.value;
+    const to    = toUnit.value;
+    if (isNaN(value)) {
+      result.textContent = 'Please enter a valid number.';
+      result.className = 'result error'; return;
+    }
+    if (toCelsius(value, from) < -273.15) {
+      result.textContent = 'Temperature is below absolute zero!';
+      result.className = 'result error'; return;
+    }
+    const converted = fromCelsius(toCelsius(value, from), to);
+    const rounded   = Math.round(converted * 100) / 100;
+    result.textContent = `${value} ${LABELS[from]} is ${rounded} ${LABELS[to]}`;
+    result.className   = 'result';
+  });
+
+  [tempInput, fromUnit, toUnit].forEach(el =>
+    el.addEventListener('change', () => result.className = 'result hidden')
+  );
+</script>
+</body>
+</html>
